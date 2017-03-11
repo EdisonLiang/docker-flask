@@ -1,21 +1,31 @@
-FROM ubuntu:14.04
-MAINTAINER Phillip Bailey <phillip@bailey.st>
+## BUILDING
+##   (from project root directory)
+##   $ docker build -t python-for-edisonliang-docker-flask .
+##
+## RUNNING
+##   $ docker run python-for-edisonliang-docker-flask
 
-ENV DEBIAN_FRONTEND noninteractive
+FROM gcr.io/stacksmith-images/minideb-buildpack:jessie-r11
 
-RUN apt-get update && apt-get install -y \
-    python-pip python-dev uwsgi-plugin-python \
-    nginx supervisor
-COPY nginx/flask.conf /etc/nginx/sites-available/
-COPY supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY app /var/www/app
+MAINTAINER Bitnami <containers@bitnami.com>
 
-RUN mkdir -p /var/log/nginx/app /var/log/uwsgi/app /var/log/supervisor \
-    && rm /etc/nginx/sites-enabled/default \
-    && ln -s /etc/nginx/sites-available/flask.conf /etc/nginx/sites-enabled/flask.conf \
-    && echo "daemon off;" >> /etc/nginx/nginx.conf \
-    &&  pip install -r /var/www/app/requirements.txt \
-    && chown -R www-data:www-data /var/www/app \
-    && chown -R www-data:www-data /var/log
+ENV STACKSMITH_STACK_ID="827ilb7" \
+    STACKSMITH_STACK_NAME="Python for EdisonLiang/docker-flask" \
+    STACKSMITH_STACK_PRIVATE="1"
 
-CMD ["/usr/bin/supervisord"]
+# Install required system packages
+RUN install_packages libc6 libssl1.0.0 libncurses5 libtinfo5 zlib1g libsqlite3-0 libreadline6
+
+RUN bitnami-pkg install python-2.7.13-0 --checksum 7f5aac196054c7eb04c981243b4ddf37020cc3eb8a7cdc69d72da57212b21573
+
+ENV PATH=/opt/bitnami/python/bin:$PATH
+
+## STACKSMITH-END: Modifications below this line will be unchanged when regenerating
+
+# Python base template
+COPY . /app
+WORKDIR /app
+
+RUN pip install -r requirements.txt
+
+CMD ["python"]
